@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName
 // ПРИХОДИТ СПИСОК ВАЛЮТ В ВИДЕ ЛИСТА
 // ПО КЛЮЧУ DATA придет массив Datum
 
-data class CoinInfoLIstOfData(
+data class CoinInfoListOfData(
         @SerializedName("Data")
         @Expose
         val data: List<Datum>? = null
