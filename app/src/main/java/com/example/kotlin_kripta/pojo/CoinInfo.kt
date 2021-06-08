@@ -4,7 +4,7 @@ import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
 
 
-data class CoinInfo (
+data class CoinInfo(
     @SerializedName("Id")
     @Expose
     val id: String? = null,
