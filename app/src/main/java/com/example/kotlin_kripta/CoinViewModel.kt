@@ -3,6 +3,7 @@ package com.example.kotlin_kripta
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import com.example.kotlin_kripta.DataBase.AppDatabase
 import com.example.kotlin_kripta.api.ApiFactory
 import com.example.kotlin_kripta.pojo.CoinPriceInfo
@@ -11,6 +12,7 @@ import com.google.gson.Gson
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
 class CoinViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -19,7 +21,15 @@ class CoinViewModel(application: Application) : AndroidViewModel(application) {
 
     val priceList = db.coinPriceInfoDao().getPriceList()
 
-    fun loadData() {
+    init {
+        loadData()
+    }
+
+    fun getDetailInfo(fSym: String): LiveData<CoinPriceInfo> {
+        return db.coinPriceInfoDao().getPriceInfoAboutCoin(fSym)
+    }
+
+    private fun loadData() {
         // Старт загрузки самых популярных валют
         val disposable = ApiFactory.apiService.getTopCoinsInfo()
             // Преобразование данных в одну строку через ","
@@ -27,6 +37,12 @@ class CoinViewModel(application: Application) : AndroidViewModel(application) {
             // Передает полученну строку внуторь блока, в виде переменной it
             .flatMap { ApiFactory.apiService.getFullPriceList(fSyms = it) }
             .map { getPriceListFromRawData(it) }
+            // Задает частоту интервала запроса
+            .delaySubscription(10, TimeUnit.SECONDS)
+            //Бесконечное выполнение загрузки (Повторяет загрузку, пока все происходит успешно (Интернет выключен))
+            .repeat()
+            //Бесконечное выполнение загрузки (Повторяет загрузку, после появления ошибки)
+            .retry()
             .subscribeOn(Schedulers.io())
             .subscribe({
                 db.coinPriceInfoDao().insertPriceList(it)
@@ -38,8 +54,7 @@ class CoinViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun getPriceListFromRawData(coinPriceInfoRawData: CoinPriceInfoRawData): List<CoinPriceInfo> {
         val result = ArrayList<CoinPriceInfo>()
-        val jsonObject = coinPriceInfoRawData.coinPriceInfoJsonObject
-        if (jsonObject == null) return result
+        val jsonObject = coinPriceInfoRawData.coinPriceInfoJsonObject ?: return result
         val coinKeySet = jsonObject.keySet()
         for (coinKey in coinKeySet) {
             val currencyJson = jsonObject.getAsJsonObject(coinKey)
