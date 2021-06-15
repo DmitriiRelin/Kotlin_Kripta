@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
-                Log.d("GGGGGGG", it.toString())
+                Log.d("gty", it.toString())
             }, {
                 Log.d("GGGGGGG", it.message.toString())
             })
